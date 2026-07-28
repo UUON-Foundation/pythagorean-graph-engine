@@ -1,7 +1,7 @@
 # Pythagorean Graph Engine
 
 **UUON Foundation — Phillip Aguilar Ruiz III**
-`phi1@uuonfoundation.com` | [Live Engine](https://uuon-foundation.github.io/pythagorean-graph-engine/)
+| [Live Engine](https://uuon-foundation.github.io/pythagorean-graph-engine/)
 
 ---
 
