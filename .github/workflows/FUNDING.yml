@@ -9,6 +9,11 @@
 # Ko-fi (no fees, direct to you)
 ko_fi: uuonfoundation
 
+# Note: Ko-fi username is uuonfoundation (no hyphen)
+# npm org is uuon-foundation (with hyphen)
+# GitHub org is UUON-Foundation (with hyphen, capitalized)
+# These are three separate platforms with three separate accounts.
+
 # Buy Me a Coffee
 # buy_me_a_coffee: uuonfoundation
 
