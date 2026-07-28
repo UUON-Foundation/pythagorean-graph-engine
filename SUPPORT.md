@@ -14,7 +14,7 @@ If it has been useful to you — for research, for learning, for building someth
 
 **GitHub Sponsors** — recurring support directly through GitHub
 
-> [github.com/sponsors/uuon-foundation](https://github.com/sponsors/uuon-foundation)
+> [github.com/sponsors/UUON-Foundation](https://github.com/sponsors/UUON-Foundation)
 
 **Direct contact** — for commercial licensing, consulting, or partnership
 
