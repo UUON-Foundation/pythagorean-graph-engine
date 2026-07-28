@@ -7,6 +7,8 @@
 
 A Pythagorean tree is a fractal built from one rule: each branch splits into two smaller branches at a fixed angle, and each child is a scaled copy of its parent. Repeat that rule recursively and a complex structure grows from almost nothing. Five numbers (angle, depth, scale, growth rate, and node shape) are all it takes to generate thousands of connected geometries deterministically. Same five numbers, same structure, every time.
 
+![Pythagorean Graph Engine — depth 6, growth 5](docs/images/engine-preview.png)
+
 This engine renders that structure in 3D. It also exposes the deeper idea: the geometry is not the asset. The graph underneath it is.
 
 ---
