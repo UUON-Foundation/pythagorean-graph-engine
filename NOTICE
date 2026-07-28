@@ -1,0 +1,25 @@
+UUON Pythagorean Recursive Geometry Engine
+==========================================
+
+Origin Author:  Phillip Aguilar Ruiz III
+Organization:   UUON Foundation Inc.
+Location:       Kassel, Germany
+Contact:        phi1@uuonfoundation.com
+
+This product includes the following original works authored by
+Phillip Aguilar Ruiz III:
+
+  - Recursive topology encoding architecture
+  - F=(P,E,R,C) procedural geometry formulation
+  - Deterministic graph-first geometry generation pipeline
+  - Inline SimpleOrbitControls implementation
+  - Graph JSON schema for renderer-agnostic geometry interchange
+  - UUON Source Attribution License (USAL-1.0)
+
+Third-party components used under their respective licenses:
+
+  - Three.js r128 — MIT License
+    https://github.com/mrdoob/three.js
+    Copyright (c) 2010-2024 three.js authors
+
+No other third-party code is present in this repository.

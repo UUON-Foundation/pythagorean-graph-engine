@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html><head><style>
+body{margin:0;background:#ffffff;font-family:Arial;color:#111;overflow:hidden}
+#container{position:relative;width:100vw;height:100vh}
+canvas{display:block}
+.controls{position:absolute;top:10px;left:10px;background:rgba(255,255,255,0.96);padding:15px;border-radius:8px;z-index:100;border:1px solid #111;color:#111}
+input[type=range]{width:120px;margin:5px 0;background:#ddd;accent-color:#111}
+button{background:#f0f0f0;color:#111;border:1px solid #111;padding:8px 12px;margin:3px;cursor:pointer;border-radius:4px;font-size:12px}
+button:hover{background:#ddd;box-shadow:0 0 6px #111}
+button.active{background:#111;color:#fff}
+label{display:block;font-size:12px;margin:5px 0;color:#111}
+.section{margin:10px 0;padding:8px;border:1px solid #bbb;border-radius:4px}
+.preset{background:#f8f8f8;margin:2px;padding:4px 8px;border-radius:3px;cursor:pointer;color:#111;border:1px solid #ddd}
+.preset:hover{background:#eee}
+</style></head><body>
+<div id="container">
+<canvas id="canvas"></canvas>
+<div class="controls">
+<div class="section">
+<label>Angle: <span id="angleVal">45</span>°<br><input type="range" id="angle" min="15" max="120" value="45"></label>
+<label>Depth: <span id="depthVal">3</span><br><input type="range" id="depth" min="2" max="6" value="3"></label>
+<label>Scale: <span id="scaleVal">75</span>%<br><input type="range" id="scale" min="60" max="95" value="75"></label>
+<label>Growth: <span id="growthVal">3</span><br><input type="range" id="growth" min="2" max="5" value="3"></label>
+</div>
+<div class="section">
+<button onclick="cycleMode()" id="modeBtn">🔵 Spheres</button>
+<button onclick="cycleMaterial()" id="matBtn">✨ Neon</button>
+<button onclick="toggleAnimation()" id="animBtn">🔄 Rotate</button>
+<button onclick="downloadOBJ()" id="objBtn">📄 Download OBJ</button>
+</div>
+<div class="section">
+<div class="preset" onclick="loadPreset(0)">🌳 Classic Tree</div>
+<div class="preset" onclick="loadPreset(1)">📐 Classic Pythagorean</div>
+<div class="preset" onclick="loadPreset(2)">⚖️ Balanced Square</div>
+<div class="preset" onclick="loadPreset(3)">🔀 Unbalanced Square</div>
+<div class="preset" onclick="loadPreset(4)">📏 Line Segment Tree</div>
+<div class="preset" onclick="loadPreset(5)">🔺 N-ary Tree (3)</div>
+<div class="preset" onclick="loadPreset(6)">🟦 N-ary Tree (4)</div>
+<div class="preset" onclick="loadPreset(7)">⭐ N-ary Tree (5)</div>
+<div class="preset" onclick="loadPreset(8)">🧬 L-system Variant</div>
+<div class="preset" onclick="loadPreset(9)">🌿 Wide Spread Tree</div>
+</div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+let scene,camera,renderer,group,controls;
+let mode=0,material=0,animate=true;
+const modes=['sphere','cube','octahedron','tetrahedron','torus'];
+const materials=['neon','rainbow','plasma','crystal','fire'];
+const symbols='⊗◊∆∇◈⬟⬢⬡◎◉⚡❄️🌊⭐💎'.split('');
+
+const presets=[
+{name:'Classic Tree',angle:45,depth:4,scale:75,growth:3,mode:0,mat:0},
+{name:'Classic Pythagorean',angle:45,depth:4,scale:71,growth:2,mode:1,mat:0},
+{name:'Balanced Square',angle:45,depth:4,scale:71,growth:2,mode:1,mat:1},
+{name:'Unbalanced Square',angle:60,depth:4,scale:75,growth:2,mode:1,mat:2},
+{name:'Line Segment Tree',angle:30,depth:5,scale:80,growth:2,mode:1,mat:3},
+{name:'N-ary Tree (3)',angle:60,depth:3,scale:75,growth:3,mode:0,mat:4},
+{name:'N-ary Tree (4)',angle:45,depth:3,scale:75,growth:4,mode:2,mat:1},
+{name:'N-ary Tree (5)',angle:72,depth:3,scale:75,growth:5,mode:3,mat:2},
+{name:'L-system Variant',angle:25,depth:4,scale:85,growth:3,mode:2,mat:3},
+{name:'Wide Spread Tree',angle:90,depth:3,scale:70,growth:4,mode:0,mat:4}
+];
+
+// Inline OrbitControls — no external CDN dependency
+class SimpleOrbitControls {
+  constructor(camera, domElement) {
+    this.camera = camera;
+    this.domElement = domElement;
+    this.enabled = true;
+    this.enableDamping = true;
+    this.dampingFactor = 0.08;
+    this.enableZoom = true;
+    this.zoomSpeed = 1.2;
+    this.enablePan = true;
+    this.panSpeed = 0.8;
+    this.minDistance = 0.01;
+    this.maxDistance = Infinity;
+    this.screenSpacePanning = true;
+    this.isDragging = false;
+
+    this._spherical = {radius:50, phi:Math.PI/3, theta:0};
+    this._target = new THREE.Vector3(0,0,0);
+    this._phiDelta = 0;
+    this._thetaDelta = 0;
+    this._radiusDelta = 0;
+    this._panOffset = new THREE.Vector3();
+    this._state = 0; // 0=none 1=rotate 2=pan
+
+    const el = domElement;
+    el.addEventListener('contextmenu', e => e.preventDefault());
+    el.addEventListener('mousedown', e => this._onMouseDown(e));
+    el.addEventListener('wheel', e => this._onWheel(e), {passive:false});
+    window.addEventListener('mousemove', e => this._onMouseMove(e));
+    window.addEventListener('mouseup', e => this._onMouseUp(e));
+
+    // Touch
+    this._touches = [];
+    el.addEventListener('touchstart', e => this._onTouchStart(e), {passive:false});
+    el.addEventListener('touchmove', e => this._onTouchMove(e), {passive:false});
+    el.addEventListener('touchend', () => { this._state=0; this.isDragging=false; });
+
+    this._lastX = 0;
+    this._lastY = 0;
+    this._lastTouchDist = 0;
+
+    // Sync spherical from initial camera position
+    const offset = camera.position.clone().sub(this._target);
+    this._spherical.radius = offset.length();
+    this._spherical.phi = Math.acos(Math.max(-1, Math.min(1, offset.y / this._spherical.radius)));
+    this._spherical.theta = Math.atan2(offset.x, offset.z);
+  }
+
+  _onMouseDown(e) {
+    if(!this.enabled) return;
+    this._lastX = e.clientX;
+    this._lastY = e.clientY;
+    this._state = e.button === 2 ? 2 : 1;
+    this.isDragging = true;
+  }
+
+  _onMouseUp() { this._state = 0; this.isDragging = false; }
+
+  _onMouseMove(e) {
+    if(!this.enabled || this._state === 0) return;
+    const dx = e.clientX - this._lastX;
+    const dy = e.clientY - this._lastY;
+    this._lastX = e.clientX;
+    this._lastY = e.clientY;
+    if(this._state === 1) {
+      this._thetaDelta -= 2 * Math.PI * dx / this.domElement.clientWidth;
+      this._phiDelta -= 2 * Math.PI * dy / this.domElement.clientHeight;
+    } else if(this._state === 2) {
+      this._pan(dx, dy);
+    }
+  }
+
+  _onWheel(e) {
+    if(!this.enabled) return;
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? (1 + this.zoomSpeed * 0.1) : (1 - this.zoomSpeed * 0.1);
+    this._radiusDelta += this._spherical.radius * (factor - 1);
+  }
+
+  _onTouchStart(e) {
+    e.preventDefault();
+    this._touches = Array.from(e.touches);
+    if(e.touches.length === 1) { this._state=1; this.isDragging=true; this._lastX=e.touches[0].clientX; this._lastY=e.touches[0].clientY; }
+    else if(e.touches.length === 2) { this._state=2; this.isDragging=true; this._lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+  }
+
+  _onTouchMove(e) {
+    e.preventDefault();
+    if(e.touches.length === 1 && this._state===1) {
+      const dx=e.touches[0].clientX-this._lastX, dy=e.touches[0].clientY-this._lastY;
+      this._lastX=e.touches[0].clientX; this._lastY=e.touches[0].clientY;
+      this._thetaDelta -= 2*Math.PI*dx/this.domElement.clientWidth;
+      this._phiDelta -= 2*Math.PI*dy/this.domElement.clientHeight;
+    } else if(e.touches.length === 2) {
+      const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      const delta=this._lastTouchDist - dist;
+      this._radiusDelta += delta * this.zoomSpeed * 0.3;
+      this._lastTouchDist=dist;
+    }
+  }
+
+  _pan(dx, dy) {
+    const cam = this.camera;
+    const right = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 0);
+    const up = this.screenSpacePanning
+      ? new THREE.Vector3().setFromMatrixColumn(cam.matrix, 1)
+      : new THREE.Vector3(0,1,0);
+    const scale = this._spherical.radius * 0.001 * this.panSpeed;
+    this._panOffset.addScaledVector(right, -dx * scale);
+    this._panOffset.addScaledVector(up, dy * scale);
+  }
+
+  update() {
+    if(this.enableDamping) {
+      this._spherical.theta += this._thetaDelta * this.dampingFactor;
+      this._spherical.phi += this._phiDelta * this.dampingFactor;
+      this._spherical.radius += this._radiusDelta * this.dampingFactor;
+      this._thetaDelta *= (1 - this.dampingFactor);
+      this._phiDelta *= (1 - this.dampingFactor);
+      this._radiusDelta *= (1 - this.dampingFactor);
+    } else {
+      this._spherical.theta += this._thetaDelta;
+      this._spherical.phi += this._phiDelta;
+      this._spherical.radius += this._radiusDelta;
+      this._thetaDelta = 0; this._phiDelta = 0; this._radiusDelta = 0;
+    }
+    this._spherical.phi = Math.max(0.01, Math.min(Math.PI - 0.01, this._spherical.phi));
+    this._spherical.radius = Math.max(this.minDistance, Math.min(this.maxDistance, this._spherical.radius));
+    this._target.add(this._panOffset.clone().multiplyScalar(this.dampingFactor));
+    this._panOffset.multiplyScalar(1 - this.dampingFactor);
+
+    const s = this._spherical;
+    const sinPhi = Math.sin(s.phi);
+    this.camera.position.set(
+      this._target.x + s.radius * sinPhi * Math.sin(s.theta),
+      this._target.y + s.radius * Math.cos(s.phi),
+      this._target.z + s.radius * sinPhi * Math.cos(s.theta)
+    );
+    this.camera.lookAt(this._target);
+  }
+}
+
+function init(){
+const canvas=document.getElementById('canvas');
+scene=new THREE.Scene();
+scene.background=new THREE.Color(0xffffff);
+camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
+renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setClearColor(0xffffff);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+group=new THREE.Group();
+scene.add(group);
+
+camera.position.set(0,20,50);
+camera.lookAt(0,0,0);
+
+// Init controls here — camera and renderer.domElement both exist at this point
+controls = new SimpleOrbitControls(camera, renderer.domElement);
+
+const ambientLight=new THREE.AmbientLight(0xffffff,1.2);
+scene.add(ambientLight);
+
+const directionalLight=new THREE.DirectionalLight(0xffffff,1.0);
+directionalLight.position.set(10,20,10);
+directionalLight.castShadow=true;
+scene.add(directionalLight);
+
+const directionalLight2=new THREE.DirectionalLight(0xffffff,0.5);
+directionalLight2.position.set(-10,10,-10);
+scene.add(directionalLight2);
+
+const pointLight=new THREE.PointLight(0xffffff,0.8,200);
+pointLight.position.set(0,30,0);
+scene.add(pointLight);
+
+draw();
+}
+
+function getMaterial(depth,maxDepth){
+const intensity=0.8;
+const factor=depth/maxDepth;
+
+switch(material){
+case 0: return new THREE.MeshPhongMaterial({color:0xd8d8d8,emissive:0x888888});
+case 1: return new THREE.MeshPhongMaterial({color:new THREE.Color().setHSL(factor,0.0,0.78),emissive:new THREE.Color().setHSL(factor,0.0,0.4)});
+case 2: return new THREE.MeshPhongMaterial({color:0xcccccc,emissive:0x999999});
+case 3: return new THREE.MeshPhongMaterial({color:0xe0e0e0,transparent:true,opacity:0.85,emissive:0xaaaaaa});
+case 4: return new THREE.MeshPhongMaterial({color:0xbbbbbb,emissive:0x888888});
+}
+}
+
+function getGeometry(size){
+const detail = size > 0.5 ? 8 : 4; // Lower detail for smaller branches
+switch(mode){
+case 0: return new THREE.SphereGeometry(size,detail,detail-2);
+case 1: return new THREE.BoxGeometry(size*2,size*2,size*2);
+case 2: return new THREE.OctahedronGeometry(size,0);
+case 3: return new THREE.TetrahedronGeometry(size,0);
+case 4: return new THREE.TorusGeometry(size,size*0.3,4,8);
+}
+}
+
+// Adds a wireframe edge overlay to any mesh for hard defined geometry lines
+function addEdges(mesh, color=0x000000){
+const edges = new THREE.EdgesGeometry(mesh.geometry);
+const lineMat = new THREE.LineBasicMaterial({color:color,linewidth:1});
+const wireframe = new THREE.LineSegments(edges, lineMat);
+wireframe.position.copy(mesh.position);
+wireframe.rotation.copy(mesh.rotation);
+wireframe.scale.copy(mesh.scale);
+return wireframe;
+}
+
+function createBranch(startPos,endPos,radius){
+if(radius < 0.1) return null; // Skip very small branches
+const direction=new THREE.Vector3().subVectors(endPos,startPos);
+const length=direction.length();
+const segments = Math.max(3, Math.min(8, Math.floor(length*2))); // Adaptive segments
+const geometry=new THREE.CylinderGeometry(radius*0.3,radius,length,segments);
+const mat=getMaterial(0,1);
+const branch=new THREE.Mesh(geometry,mat);
+
+branch.position.copy(startPos).add(direction.multiplyScalar(0.5));
+branch.lookAt(endPos);
+branch.rotateX(Math.PI/2);
+
+// Defined edge lines on branch
+const edgeLines = addEdges(branch);
+group.add(edgeLines);
+
+return branch;
+}
+
+function drawFractal(pos,dir,length,radius,depth,maxDepth,presetParams=null){
+if(depth<=0||length<0.3||radius<0.05)return;
+
+// Use preset parameters if provided, otherwise use UI controls
+const scale = presetParams ? presetParams.scale : parseInt(document.getElementById('scale').value);
+const angle = presetParams ? presetParams.angle : parseInt(document.getElementById('angle').value);
+const branches = presetParams ? presetParams.growth : parseInt(document.getElementById('growth').value);
+
+const endPos=pos.clone().add(dir.clone().multiplyScalar(length));
+const branch=createBranch(pos,endPos,radius);
+if(branch) group.add(branch);
+
+// Add nodes for all branches to show proper structure
+const nodeGeo=getGeometry(radius);
+const nodeMat=getMaterial(maxDepth-depth,maxDepth);
+const node=new THREE.Mesh(nodeGeo,nodeMat);
+node.position.copy(endPos);
+
+// Edge lines on node
+const nodeEdges = addEdges(node);
+group.add(node);
+group.add(nodeEdges);
+
+const nextLength=length*scale/100;
+const nextRadius=radius*0.75; // Better radius reduction
+const angleRad=angle*Math.PI/180;
+
+// Create proper branching based on tree type
+if(branches === 2) {
+// Binary tree (Pythagorean style)
+const leftAngle = -angleRad;
+const rightAngle = angleRad;
+
+const leftDir = dir.clone().applyAxisAngle(new THREE.Vector3(0,0,1), leftAngle);
+const rightDir = dir.clone().applyAxisAngle(new THREE.Vector3(0,0,1), rightAngle);
+
+drawFractal(endPos,leftDir,nextLength,nextRadius,depth-1,maxDepth,presetParams);
+drawFractal(endPos,rightDir,nextLength,nextRadius,depth-1,maxDepth,presetParams);
+} else {
+// N-ary tree
+for(let i=0;i<branches;i++){
+const branchAngle = (i - (branches-1)/2) * angleRad;
+const rotationAxis = new THREE.Vector3(0,0,1);
+const newDir = dir.clone().applyAxisAngle(rotationAxis, branchAngle);
+drawFractal(endPos,newDir,nextLength,nextRadius,depth-1,maxDepth,presetParams);
+}
+}
+}
+
+function draw(){
+// Dispose of existing geometries and materials to prevent memory leaks
+group.children.forEach(child => {
+if(child.geometry) child.geometry.dispose();
+if(child.material) child.material.dispose();
+});
+while(group.children.length>0){
+group.remove(group.children[0]);
+}
+
+const depth=parseInt(document.getElementById('depth').value);
+const startPos=new THREE.Vector3(0,0,0);
+const upDir=new THREE.Vector3(0,1,0);
+drawFractal(startPos,upDir,5,1,depth,depth);
+}
+
+function cycleMode(){
+mode=(mode+1)%modes.length;
+document.getElementById('modeBtn').textContent=`${['🔵','🟩','🔷','🔺','🟤'][mode]} ${modes[mode]}`;
+draw();
+}
+
+function cycleMaterial(){
+material=(material+1)%materials.length;
+document.getElementById('matBtn').textContent=`${['✨','🌈','💫','💎','🔥'][material]} ${materials[material]}`;
+draw();
+}
+
+function toggleAnimation(){
+animate=!animate;
+document.getElementById('animBtn').textContent=animate?'🔄 Rotate':'⏸️ Stop';
+}
+
+function downloadFile(data, filename, type) {
+const blob = new Blob([data], { type: type });
+const url = URL.createObjectURL(blob);
+const link = document.createElement('a');
+link.href = url;
+link.download = filename;
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+URL.revokeObjectURL(url);
+}
+
+function downloadOBJ() {
+// Create OBJ content manually since OBJExporter might not be available
+let objContent = '# Pythagorean Tree Fractal\n';
+objContent += '# Generated by Interactive Fractal Generator\n\n';
+
+let vertexIndex = 1;
+const meshes = [];
+
+group.traverse((child) => {
+if (child.isMesh) {
+meshes.push(child);
+}
+});
+
+meshes.forEach((mesh, meshIndex) => {
+const geometry = mesh.geometry;
+const position = geometry.attributes.position;
+const vertices = [];
+const faces = [];
+
+// Extract vertices
+for (let i = 0; i < position.count; i++) {
+const vertex = new THREE.Vector3();
+vertex.fromBufferAttribute(position, i);
+vertex.applyMatrix4(mesh.matrixWorld);
+vertices.push(vertex);
+objContent += `v ${vertex.x.toFixed(6)} ${vertex.y.toFixed(6)} ${vertex.z.toFixed(6)}\n`;
+}
+
+// Extract faces (assuming triangles)
+if (geometry.index) {
+const indices = geometry.index.array;
+for (let i = 0; i < indices.length; i += 3) {
+objContent += `f ${vertexIndex + indices[i]} ${vertexIndex + indices[i + 1]} ${vertexIndex + indices[i + 2]}\n`;
+}
+} else {
+for (let i = 0; i < position.count; i += 3) {
+objContent += `f ${vertexIndex + i} ${vertexIndex + i + 1} ${vertexIndex + i + 2}\n`;
+}
+}
+
+vertexIndex += position.count;
+objContent += '\n';
+});
+
+const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+downloadFile(objContent, `pythagorean-tree-${timestamp}.obj`, 'text/plain');
+}
+
+function loadPreset(index){
+const preset=presets[index];
+document.getElementById('angle').value=preset.angle;
+document.getElementById('depth').value=preset.depth;
+document.getElementById('scale').value=preset.scale;
+document.getElementById('growth').value=preset.growth;
+mode=preset.mode;
+material=preset.mat;
+updateDisplay();
+draw();
+}
+
+function updateDisplay(){
+document.getElementById('angleVal').textContent=document.getElementById('angle').value;
+document.getElementById('depthVal').textContent=document.getElementById('depth').value;
+document.getElementById('scaleVal').textContent=document.getElementById('scale').value;
+document.getElementById('growthVal').textContent=document.getElementById('growth').value;
+document.getElementById('modeBtn').textContent=`${['🔵','🟩','🔷','🔺','🟤'][mode]} ${modes[mode]}`;
+document.getElementById('matBtn').textContent=`${['✨','🌈','💫','💎','🔥'][material]} ${materials[material]}`;
+}
+
+function render(){
+if(controls) controls.update();
+if(animate && controls && !controls.isDragging){
+group.rotation.y+=0.01;
+}
+renderer.render(scene,camera);
+requestAnimationFrame(render);
+}
+
+// Debounced drawing to prevent excessive redraws
+let drawTimeout;
+function debouncedDraw(){
+clearTimeout(drawTimeout);
+drawTimeout = setTimeout(draw, 100);
+}
+
+document.getElementById('angle').oninput=function(){updateDisplay();debouncedDraw()};
+document.getElementById('depth').oninput=function(){updateDisplay();debouncedDraw()};
+document.getElementById('scale').oninput=function(){updateDisplay();debouncedDraw()};
+document.getElementById('growth').oninput=function(){updateDisplay();debouncedDraw()};
+
+window.addEventListener('resize',()=>{
+camera.aspect=window.innerWidth/window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+init();
+render();
+</script></body></html>
