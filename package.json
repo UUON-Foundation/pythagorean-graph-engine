@@ -1,0 +1,24 @@
+{
+  "name": "@uuon-foundation/pythagorean-graph-engine",
+  "version": "1.0.0",
+  "description": "Interactive 3D Pythagorean tree engine. Recursive topology with F=(P,E,R,C) procedural compression. Runs in browser, no install. UUON Foundation.",
+  "homepage": "https://github.com/UUON-Foundation/pythagorean-graph-engine#readme",
+  "bugs": {
+    "url": "https://github.com/UUON-Foundation/pythagorean-graph-engine/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UUON-Foundation/pythagorean-graph-engine.git"
+  },
+  "license": "LicenseRef-USAL-1.0",
+  "author": "Phillip Aguilar Ruiz III <phi1@uuonfoundation.com>",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": "[\"pythagorean-tree\",\"fractal\",\"three-js\",\"procedural-generation\",\"graph-engine\",\"webgl\",\"recursive-geometry\",\"uuon\"]"
+}
