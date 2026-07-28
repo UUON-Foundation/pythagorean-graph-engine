@@ -1,0 +1,17 @@
+# UUON Foundation — GitHub Funding Configuration
+# This file enables the Sponsor button on every UUON-Foundation repo.
+# Place this file at .github/FUNDING.yml in each repo.
+# GitHub renders a Sponsor button automatically when this file exists.
+
+# GitHub Sponsors (set up at github.com/sponsors)
+# github: uuon-foundation
+
+# Ko-fi (no fees, direct to you)
+ko_fi: uuonfoundation
+
+# Buy Me a Coffee
+# buy_me_a_coffee: uuonfoundation
+
+# Custom donation URL
+custom:
+  - https://uuonfoundation.com/support
