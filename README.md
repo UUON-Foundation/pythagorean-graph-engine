@@ -5,7 +5,7 @@
 
 ---
 
-A Pythagorean tree is a fractal built from one rule: each branch splits into two smaller branches at a fixed angle, and each child is a scaled copy of its parent. Repeat that rule recursively and a complex structure grows from almost nothing. Five numbers — angle, depth, scale, growth rate, and node shape — are all it takes to generate thousands of connected geometries deterministically. Same five numbers, same structure, every time.
+A Pythagorean tree is a fractal built from one rule: each branch splits into two smaller branches at a fixed angle, and each child is a scaled copy of its parent. Repeat that rule recursively and a complex structure grows from almost nothing. Five numbers (angle, depth, scale, growth rate, and node shape) are all it takes to generate thousands of connected geometries deterministically. Same five numbers, same structure, every time.
 
 This engine renders that structure in 3D. It also exposes the deeper idea: the geometry is not the asset. The graph underneath it is.
 
@@ -60,7 +60,7 @@ The engine is a self-contained HTML file. No install, no server, no dependencies
 
 **Researchers** can use it to generate parameterized branching topologies for study, export them as OBJ meshes, and compare structural properties across parameter sets.
 
-**Developers** can fork the engine and extend the graph serializer to export the node/edge structure as JSON, making the topology available to any downstream system — a database, an API, a simulation, or an AI agent.
+**Developers** can fork the engine and extend the graph serializer to export the node/edge structure as JSON, making the topology available to any downstream system (database, API, simulation, AI agent).
 
 **Educators** can use it to demonstrate recursive construction, fractal geometry, Murray's Law, and the relationship between parameters and emergent structure in real time.
 
@@ -112,5 +112,4 @@ See `LICENSE` for full terms.
 ---
 
 *UUON Foundation Inc. — Kassel, Germany*
-*phi1@uuonfoundation.com*
 # UUON Foundation
